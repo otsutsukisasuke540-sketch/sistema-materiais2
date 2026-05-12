@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Materiais - Gestão de Estoque</title>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --dark: #1e293b;
+            --bg: #f1f5f9;
+            --danger: #fee2e2;
+            --text: #334155;
+        }
+
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
+        
+        /* LOGIN */
+        .login { display: flex; justify-content: center; align-items: center; height: 100vh; background: var(--dark); }
+        .box { background: white; padding: 40px; border-radius: 12px; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .box h3 { margin-top: 0; color: var(--dark); }
+        
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--primary); ring: 2px var(--primary); }
+
+        button { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        button:hover { background: #1e40af; }
+        .btn-export { background: #10b981; margin-top: 5px; }
+        .btn-export:hover { background: #059669; }
+
+        /* SIDEBAR */
+        .sidebar { width: 250px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 25px; display: none; box-sizing: border-box; }
+        .sidebar h2 { font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .sidebar a { display: block; color: #cbd5e1; padding: 12px; text-decoration: none; border-radius: 8px; margin: 8px 0; transition: 0.2s; }
+        .sidebar a:hover { background: #334155; color: white; }
+
+        /* MAIN CONTENT */
+        .main { margin-left: 250px; padding: 30px; display: none; }
+        .card { background: white; padding: 25px; margin-bottom: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        
+        .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th { background: #f8fafc; color: var(--dark); padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        
+        .qtd-input { width: 70px !important; text-align: center; }
+        .alerta { background: var(--danger) !important; }
+        .alerta td { border-bottom: 1px solid #fecaca; }
+        
+        .search-container { position: sticky; top: 0; background: white; z-index: 10; padding-bottom: 10px; }
+        .search { width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none !important; }
+            .main { margin-left: 0; padding: 15px; }
+            .header-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login" id="login">
+    <div class="box">
+        <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" width="60" alt="logo"><br><br>
+        <h3>Almoxarifado</h3>
+        <input id="email" placeholder="E-mail corporativo">
+        <input id="senha" type="password" placeholder="Senha">
+        <button onclick="logar()">Acessar Sistema</button>
+    </div>
+</div>
+
+<div class="sidebar" id="menu">
+    <h2>📦 Gestão Materiais</h2>
+    <a href="#">📝 Nova Solicitação</a>
+    <a href="#" id="linkAdmin" style="display:none">📊 Painel Administrativo</a>
+    <a href="javascript:location.reload()" style="margin-top:50px; color:#f87171">✕ Sair</a>
+</div>
+
+<div class="main" id="sistema">
+    <h1>Solicitação de Materiais</h1>
+
+    <div class="card header-grid">
+        <div>
+            <label>Unidade / Filial</label>
+            <select id="filial">
+                <option>Filial A - Matriz</option>
+                <option>Filial B - Norte</option>
+                <option>Filial C - Sul</option>
+                <option>Filial D - CD</option>
+            </select>
+        </div>
+        <div>
+            <label>Mês de Referência</label>
+            <input type="month" id="mes">
+        </div>
+        <div>
+            <label>Responsável</label>
+            <input id="nome" placeholder="Nome do solicitante">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="search-container">
+            <input placeholder="🔍 O que você está procurando? Digite o nome do item..." class="search" onkeyup="buscar(this.value)">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="40%">Item</th>
+                    <th width="10%">Qtd</th>
+                    <th width="10%">Média</th>
+                    <th width="10%">Dif</th>
+                    <th width="30%">Justificativa (Se houver excesso)</th>
+                </tr>
+            </thead>
+            <tbody id="tabela">
+                </tbody>
+        </table>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom: 50px;">
+        <button onclick="enviar()" style="flex:2">FINALIZAR E ENVIAR SOLICITAÇÃO</button>
+        <button onclick="exportarCSV()" class="btn-export" style="flex:1">BAIXAR CÓPIA (CSV)</button>
+    </div>
+</div>
+
+<script>
+// CONFIGURAÇÃO DE USUÁRIOS
+const usuarios = [
+    {email:"admin@empresa.com", senha:"123", tipo:"admin"},
+    {email:"filial@empresa.com", senha:"123", tipo:"user"}
+];
+
+// LISTA COMPLETA EXTRAÍDA DA IMAGEM
+const itensLista = [
+    "Apoio de pé", "Apagador p/ Quadro Branco", "Almofada Para carimbo azul", "Bloco de vale", "Borracha",
+    "Bobina p/ calculadora 57/30 Silfer", "Bolsa com ziper(guarda dinheiro)", "Caderno 1 materia - 80 folhas",
+    "Cartolina Branca", "Caixa Arquivo - papelão - marca frama", "Caneta Compactor 07 - AZ",
+    "Caneta Compactor 07 - PT", "Caneta Compactor 07 - VM", "Calculadora tradicional(mesa)",
+    "Clipes 2/0 galvan 500ag Acc", "Clipes 6/0 galvan 500ag Acc", "Corretivo tradicional",
+    "Corretivo tipo fita", "Cola bastão", "Cola Bonder", "Cola Isolpor", "Cola Quente - Bastão",
+    "Cola Quente - Pistola", "Crachá identificador de plastico", "Detect pen detector dinheiro",
+    "Suporte de durex pequeno", "Durex Pequeno", "Elastico Sup. Am. Mercur n18", "Estilete largo 30cm",
+    "Extrator de Grampo Garra", "Fitilho", "Fita adesiva larga vermelha", "Fita Empacotadora eurocel PVC",
+    "Fita Corretiva 12m x 4,2mm", "Grafite 07", "Grampeador", "Lacre para malotes - pct c/100",
+    "Lapis de cera estaca Acrilex", "Grampos 9/14 5000 unidades", "Grampo cobreado 26/6 500",
+    "Lapiseira 07", "Lápis", "Lamina para estilete", "Linha nylon", "Marca texto Lumi Color (Amarelo)",
+    "Marca texto Lumi Color (Azul)", "Marca texto Lumi Color (Verde)", "Molha dedo",
+    "Envelopes papel - caixa com 100", "Envelopes plásticos Grande", "Marcador Permanente Pilot AZ",
+    "Papel HP 75G A4 Office", "Papel HP 75G A4 - 40kg", "Pasta AZ", "Pasta L", "Pasta Sanfonada",
+    "Pincel Quadro Branco (Azul)", "Pincel Quadro Branco (Preto)", "Pilha normal", "Pilha palito",
+    "Prancheta de madeira", "Porta Caneta", "Tesoura Grande",
+    "Acido Muriatico 1L", "Álcool Liquido 70% 5 L", "Álcool em gel", "Balde 15L", "Cabo de vassoura",
+    "Copo descartável", "Detergente neutro 5L", "Desinfetante 5L", "Desincrustante limpeza banheiro",
+    "Desentupidor de pia", "Dispenser p/ papel higienico", "Escova de limpeza", "Mop Industrial Completo",
+    "Esponja de limpeza Pesada", "Esponja Fibraço", "Pano de Limpeza laranja", "Filtro de café 103",
+    "Guardanapo pct", "Luva nitrilica verde M", "Lixeira escritorio 20L", "Limpa vidros",
+    "Mascara descartavel", "Vassoura de nylon", "Vassoura de piaçava", "Saco p/lixo 100 lts", "Sabão em pó"
+];
+
+// MÉDIAS DE CONSUMO (Exemplos - Ajuste conforme necessário)
+const mediasConsumo = {
+    "Papel HP 75G A4 Office": 10,
+    "Álcool Liquido 70% 5 L": 2,
+    "Detergente neutro 5L": 4,
+    "Desinfetante 5L": 3,
+    "Saco p/lixo 100 lts": 5,
+    "Copo descartável": 10
+};
+
+// INICIALIZAÇÃO
+function logar() {
+    let email = document.getElementById("email").value;
+    let senha = document.getElementById("senha").value;
+    let user = usuarios.find(u => u.email === email && u.senha === senha);
+
+    if(!user) { alert("⚠️ Usuário ou senha incorretos!"); return; }
+
+    document.getElementById("login").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+    document.getElementById("sistema").style.display = "block";
+
+    if(user.tipo === "admin") document.getElementById("linkAdmin").style.display = "block";
+    
+    gerarTabela();
+}
+
+function gerarTabela() {
+    const tbody = document.getElementById("tabela");
+    tbody.innerHTML = "";
+
+    itensLista.sort().forEach(item => {
+        let media = mediasConsumo[item] || 0;
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${item}</strong></td>
+            <td><input type="number" min="0" class="qtd qtd-input" placeholder="0"></td>
+            <td class="media-val">${media}</td>
+            <td class="dif">0</td>
+            <td><input class="just" placeholder="..."></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// LÓGICA DE CÁLCULO DINÂMICO
+document.addEventListener("input", function(e) {
+    if(e.target.classList.contains("qtd")) {
+        let tr = e.target.closest("tr");
+        let qtd = parseInt(e.target.value) || 0;
+        let media = parseInt(tr.querySelector(".media-val").innerText);
+        let dif = qtd - media;
+        
+        let tdDif = tr.querySelector(".dif");
+        tdDif.innerText = dif;
+
+        if(qtd > media && media > 0) {
+            tr.classList.add("alerta");
+            tdDif.style.color = "red";
+            tdDif.style.fontWeight = "bold";
+        } else {
+            tr.classList.remove("alerta");
+            tdDif.style.color = "inherit";
+        }
+    }
+});
+
+// BUSCA OTIMIZADA
+function buscar(texto) {
+    let filter = texto.toLowerCase();
+    let rows = document.querySelectorAll("#tabela tr");
+    
+    rows.forEach(tr => {
+        let nomeItem = tr.cells[0].innerText.toLowerCase();
+        tr.style.display = nomeItem.includes(filter) ? "" : "none";
+    });
+}
+
+// EXPORTAR PARA EXCEL (CSV)
+function exportarCSV() {
+    let csv = ["Item;Quantidade;Media;Diferenca;Justificativa"];
+    document.querySelectorAll("#tabela tr").forEach(tr => {
+        let qtd = tr.querySelector(".qtd").value;
+        if(qtd > 0) {
+            let linha = [
+                tr.cells[0].innerText,
+                qtd,
+                tr.cells[2].innerText,
+                tr.cells[3].innerText,
+                tr.querySelector(".just").value
+            ];
+            csv.push(linha.join(";"));
+        }
+    });
+
+    if(csv.length === 1) { alert("Preencha ao menos um item!"); return; }
+
+    let blob = new Blob(["\ufeff" + csv.join("\n")], {type: 'text/csv;charset=utf-8;'});
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Pedido_${filial.value}_${mes.value}.csv`;
+    link.click();
+}
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC5JeVAP", // Substitua pela sua chave real
+        authDomain: "projeto-a60d6.firebaseapp.com",
+        projectId: "projeto-a60d6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.enviar = async function() {
+        const btn = event.target;
+        
+        let dados = {
+            filial: document.getElementById("filial").value,
+            mes: document.getElementById("mes").value,
+            solicitante: document.getElementById("nome").value,
+            dataEnvio: new Date().toISOString(),
+            itens: []
+        };
+
+        if(!dados.mes || !dados.solicitante) {
+            alert("❌ Por favor, preencha o mês e o seu nome.");
+            return;
+        }
+
+        document.querySelectorAll("#tabela tr").forEach(tr => {
+            let qtd = tr.querySelector(".qtd").value;
+            if(qtd > 0) {
+                dados.itens.push({
+                    item: tr.cells[0].innerText,
+                    quantidade: qtd,
+                    justificativa: tr.querySelector(".just").value
+                });
+            }
+        });
+
+        if(dados.itens.length === 0) {
+            alert("❌ Adicione pelo menos um item à solicitação.");
+            return;
+        }
+
+        try {
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+            await addDoc(collection(db, "solicitacoes"), dados);
+            alert("🚀 Solicitação enviada com sucesso!");
+            location.reload();
+        } catch (e) {
+            alert("Erro ao salvar: " + e);
+            btn.disabled = false;
+            btn.innerText = "FINALIZAR E ENVIAR SOLICITAÇÃO";
+        }
+    }
+</script>
+
+</body>
+</html>
