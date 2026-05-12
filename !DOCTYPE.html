@@ -74,7 +74,7 @@
 <div class="sidebar" id="menu">
     <h2>📦 Gestão Materiais</h2>
     <a href="#">📝 Nova Solicitação</a>
-    <a href="#" id="linkAdmin" style="display:none">📊 Painel Administrativo</a>
+    <a href="admin.html" id="linkAdmin" style="display:none">📊 Painel Administrativo</a>
     <a href="javascript:location.reload()" style="margin-top:50px; color:#f87171">✕ Sair</a>
 </div>
 
@@ -128,13 +128,12 @@
 </div>
 
 <script>
-// CONFIGURAÇÃO DE USUÁRIOS
 const usuarios = [
     {email:"admin@empresa.com", senha:"123", tipo:"admin"},
     {email:"filial@empresa.com", senha:"123", tipo:"user"}
 ];
 
-// LISTA COMPLETA EXTRAÍDA DA IMAGEM
+// LISTA COMPLETA EXTRAÍDA DAS SUAS IMAGENS
 const itensLista = [
     "Apoio de pé", "Apagador p/ Quadro Branco", "Almofada Para carimbo azul", "Bloco de vale", "Borracha",
     "Bobina p/ calculadora 57/30 Silfer", "Bolsa com ziper(guarda dinheiro)", "Caderno 1 materia - 80 folhas",
@@ -158,20 +157,18 @@ const itensLista = [
     "Desentupidor de pia", "Dispenser p/ papel higienico", "Escova de limpeza", "Mop Industrial Completo",
     "Esponja de limpeza Pesada", "Esponja Fibraço", "Pano de Limpeza laranja", "Filtro de café 103",
     "Guardanapo pct", "Luva nitrilica verde M", "Lixeira escritorio 20L", "Limpa vidros",
-    "Mascara descartavel", "Vassoura de nylon", "Vassoura de piaçava", "Saco p/lixo 100 lts", "Sabão em pó"
+    "Mascara descartavel", "Vassoura de nylon", "Vassoura de piaçava", "Saco p/lixo 100 lts", "Sabão em pó",
+    "Vassoura de pelo 30 cm", "Pano de prato", "Rodo 40cm", "Sabonete Liq. Erva Doce 5 Lts"
 ];
 
-// MÉDIAS DE CONSUMO (Exemplos - Ajuste conforme necessário)
 const mediasConsumo = {
     "Papel HP 75G A4 Office": 10,
     "Álcool Liquido 70% 5 L": 2,
     "Detergente neutro 5L": 4,
-    "Desinfetante 5L": 3,
-    "Saco p/lixo 100 lts": 5,
-    "Copo descartável": 10
+    "Saco p/lixo 100 lts": 10,
+    "Copo descartável": 15
 };
 
-// INICIALIZAÇÃO
 function logar() {
     let email = document.getElementById("email").value;
     let senha = document.getElementById("senha").value;
@@ -179,6 +176,7 @@ function logar() {
 
     if(!user) { alert("⚠️ Usuário ou senha incorretos!"); return; }
 
+    // FAZ O LOGIN SUMIR E O SISTEMA APARECER
     document.getElementById("login").style.display = "none";
     document.getElementById("menu").style.display = "block";
     document.getElementById("sistema").style.display = "block";
@@ -191,7 +189,6 @@ function logar() {
 function gerarTabela() {
     const tbody = document.getElementById("tabela");
     tbody.innerHTML = "";
-
     itensLista.sort().forEach(item => {
         let media = mediasConsumo[item] || 0;
         let tr = document.createElement("tr");
@@ -206,17 +203,14 @@ function gerarTabela() {
     });
 }
 
-// LÓGICA DE CÁLCULO DINÂMICO
 document.addEventListener("input", function(e) {
     if(e.target.classList.contains("qtd")) {
         let tr = e.target.closest("tr");
         let qtd = parseInt(e.target.value) || 0;
         let media = parseInt(tr.querySelector(".media-val").innerText);
         let dif = qtd - media;
-        
         let tdDif = tr.querySelector(".dif");
         tdDif.innerText = dif;
-
         if(qtd > media && media > 0) {
             tr.classList.add("alerta");
             tdDif.style.color = "red";
@@ -228,40 +222,28 @@ document.addEventListener("input", function(e) {
     }
 });
 
-// BUSCA OTIMIZADA
 function buscar(texto) {
     let filter = texto.toLowerCase();
     let rows = document.querySelectorAll("#tabela tr");
-    
     rows.forEach(tr => {
         let nomeItem = tr.cells[0].innerText.toLowerCase();
         tr.style.display = nomeItem.includes(filter) ? "" : "none";
     });
 }
 
-// EXPORTAR PARA EXCEL (CSV)
 function exportarCSV() {
     let csv = ["Item;Quantidade;Media;Diferenca;Justificativa"];
     document.querySelectorAll("#tabela tr").forEach(tr => {
         let qtd = tr.querySelector(".qtd").value;
         if(qtd > 0) {
-            let linha = [
-                tr.cells[0].innerText,
-                qtd,
-                tr.cells[2].innerText,
-                tr.cells[3].innerText,
-                tr.querySelector(".just").value
-            ];
-            csv.push(linha.join(";"));
+            csv.push([tr.cells[0].innerText, qtd, tr.cells[2].innerText, tr.cells[3].innerText, tr.querySelector(".just").value].join(";"));
         }
     });
-
     if(csv.length === 1) { alert("Preencha ao menos um item!"); return; }
-
     let blob = new Blob(["\ufeff" + csv.join("\n")], {type: 'text/csv;charset=utf-8;'});
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Pedido_${filial.value}_${mes.value}.csv`;
+    link.download = `Pedido_${document.getElementById("filial").value}.csv`;
     link.click();
 }
 </script>
@@ -271,7 +253,7 @@ function exportarCSV() {
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyC5JeVAP", // Substitua pela sua chave real
+        apiKey: "AIzaSyC5JeVAPt5PFu5VGo36xiedHdV8dHewqCQ",
         authDomain: "projeto-a60d6.firebaseapp.com",
         projectId: "projeto-a60d6"
     };
@@ -281,7 +263,6 @@ function exportarCSV() {
 
     window.enviar = async function() {
         const btn = event.target;
-        
         let dados = {
             filial: document.getElementById("filial").value,
             mes: document.getElementById("mes").value,
@@ -290,10 +271,7 @@ function exportarCSV() {
             itens: []
         };
 
-        if(!dados.mes || !dados.solicitante) {
-            alert("❌ Por favor, preencha o mês e o seu nome.");
-            return;
-        }
+        if(!dados.mes || !dados.solicitante) { alert("❌ Preencha o mês e seu nome."); return; }
 
         document.querySelectorAll("#tabela tr").forEach(tr => {
             let qtd = tr.querySelector(".qtd").value;
@@ -306,24 +284,18 @@ function exportarCSV() {
             }
         });
 
-        if(dados.itens.length === 0) {
-            alert("❌ Adicione pelo menos um item à solicitação.");
-            return;
-        }
+        if(dados.itens.length === 0) { alert("❌ Adicione pelo menos um item."); return; }
 
         try {
-            btn.disabled = true;
-            btn.innerText = "Enviando...";
+            btn.disabled = true; btn.innerText = "Enviando...";
             await addDoc(collection(db, "solicitacoes"), dados);
-            alert("🚀 Solicitação enviada com sucesso!");
+            alert("🚀 Solicitação enviada!");
             location.reload();
         } catch (e) {
-            alert("Erro ao salvar: " + e);
-            btn.disabled = false;
-            btn.innerText = "FINALIZAR E ENVIAR SOLICITAÇÃO";
+            alert("Erro: " + e);
+            btn.disabled = false; btn.innerText = "FINALIZAR E ENVIAR SOLICITAÇÃO";
         }
     }
 </script>
-
 </body>
 </html>
